@@ -44,16 +44,51 @@ class BookController extends Controller
 
     public function edit(Book $book)
     {
-        // 
+        return inertia('Books/Edit', [
+            'book' => $book,
+        ]);
     }
 
     public function update(Request $request, Book $book)
     {
-        // 
+
+
+        $validated = $request->validate([
+            'kode_buku' => 'required|unique:books,kode_buku,' . $book->id,
+            'judul' => 'required|max:255',
+            'pengarang' => 'required|max:255',
+            'penerbit' => 'nullable|max:255',
+            'tahun' => 'nullable|digits:4',
+            'stok' => 'required|integer|min:0',
+        ]);
+        // Mengganti data lama pada $book dengan data baru yang sudah divalidasi
+        $book->update($validated);
+        // Kembali ke daftar buku, sertakan flash message (lihat Dasar Teori E.3)
+        return redirect()->route('books.index')->with('success', 'Buku berhasil diperbarui');
     }
 
     public function destroy(Book $book)
     {
-        // 
+        // Menghapus baris data buku ini secara permanen dari tabel books
+        $book->delete();
+        // Kembali ke daftar buku, sertakan flash message
+        return redirect()->route('books.index')->with('success', 'Buku berhasil dihapus');
     }
+
+    public function share(Request $request): array
+    {
+        return [
+            ...parent::share($request),
+            'auth' => [
+                'user' => $request->user(),
+            ],
+            // Blok baru: membagikan pesan flash ke SELURUH halaman Vue secara otomatis
+            'flash' => [
+                // session('success') membaca pesan yang dikirim lewat ->with('success', ...)
+                // pada Langkah 2 dan 4; bernilai null apabila tidak ada pesan
+                'success' => session('success'),
+            ],
+        ];
+    }
+
 }
